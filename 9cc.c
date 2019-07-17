@@ -36,10 +36,26 @@ void error(char *fmt, ...){
     exit(1);
 }
 
+// input program
+char *user_input;
+
+// reports location of error
+void error_at(char *loc, char *fmt, ...){
+    va_list ap;
+    va_start(ap, fmt);
+
+    int pos = loc - user_input;
+    fprintf(stderr, "%s\n", user_input);
+    fprintf(stderr, "%*s", pos, "");    // outputs pos pieces of spaces
+    fprintf(stderr, "^ ");
+    vfprintf(stderr, fmt, ap);
+    fprintf(stderr, "\n");
+    exit(1);
+}
 
 // push forward token and returns True if next token is equal to an expected operator,
 // returns False else
-bool comsume(char op){
+bool consume(char op){
     if (token->kind != TK_RESERVED || token->str[0] != op)
         return false;
     token = token->next;
@@ -50,7 +66,7 @@ bool comsume(char op){
 // reports error else
 void expect(char op){
     if (token->kind != TK_RESERVED || token->str[0] != op)
-        error("it is not '%c'", op);
+        error_at(token->str, "it is not '%c'", op);
     token = token->next;
 }
 
@@ -58,7 +74,7 @@ void expect(char op){
 // reports error else
 int expect_number(){
     if (token->kind != TK_NUM)
-        error("this is not a number");
+        error_at(token->str, "this is not a number");
     int val = token->val;
     token = token->next;
     return val;
@@ -101,7 +117,7 @@ Token *tokenize(char *p){
             continue;
         }
 
-        error("can not tokenize");
+        error_at(p, "can not tokenize");
     
     }
 
@@ -119,6 +135,8 @@ int main(int argc, char **argv){
         return 1;
     }
 
+    user_input = argv[1];
+
     // tokenize
     token = tokenize(argv[1]);
 
@@ -131,10 +149,10 @@ int main(int argc, char **argv){
     // print mov instruction
     printf("    mov rax, %d\n", expect_number());
 
-    // comsume `+ $number` or `- $number` and
+    // consume `+ $number` or `- $number` and
     // print assembly
     while(!at_eof()){
-        if(comsume('+')){
+        if(consume('+')){
             printf("    add rax, %d\n", expect_number());
             continue; 
         } 
